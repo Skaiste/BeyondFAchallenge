@@ -1,0 +1,10 @@
+num_epochs: 1000
+batch_size: 32
+lr: 0.0003
+gpu_id: 0
+train_csv_path: ../csv/train_age.csv
+valid_csv_path: ../csv/valid_age.csv
+eval_csv_path: ../csv/eval_age.csv
+json_dir: ../../output
+output_dir: results
+task: age # change for desired task
