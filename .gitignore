@@ -16,5 +16,6 @@ evaluation/csv/
 .venv
 tmp/
 tmp*/
+results_2d_cnn/
 
 run_tractseg.sh

@@ -8,7 +8,7 @@ Fractional anisotropy (FA) is a metric frequently used to interpret white matter
 
 ## Dataset
 
-This project uses the **MASiVar dataset** ([ds003416](https://github.com/OpenNeuroDatasets/ds003416)), specifically the **PreQual v1.0.0 preprocessed derivatives**. The MASiVar dataset consists of 319 diffusion scans acquired across 14 healthy adults, 83 healthy children (5 to 8 years), three sites, and four scanners.
+This project uses the **MASiVar dataset** ([ds003416](https://github.com/OpenNeuroDatasets/ds003416)), specifically the **PreQual v1.0.0 preprocessed derivatives**. The MASiVar dataset consists of 319 diffusion scans acquired across 14 healthy adults, 83 healthy children (5 to 8 years), three sites, and four scanners. The scans for each subject were acquired through multiple sessions using different scanners totaling 1134 scans. Some scans were taken using less than 6 directions, they are deemed invalid and the dataset is reduced to 754 images.
 
 ### Data Splitting
 
@@ -20,14 +20,14 @@ The dataset is split into train, validation, and evaluation sets using age-strat
 
 Example output from the splitting function:
 ```
-Train set: 858 samples from 69 subjects
-Validation set: 150 samples from 14 subjects
-Evaluation set: 126 samples from 14 subjects
+Train set: 590 samples from 69 subjects
+Validation set: 84 samples from 14 subjects
+Evaluation set: 80 samples from 14 subjects
 
 Statistics:
   Age range - Train: 5.4 to 47.0 years (mean: 18.1)
-  Age range - Val: 6.3 to 30.0 years (mean: 11.7)
-  Age range - Eval: 6.2 to 31.0 years (mean: 9.4)
+  Age range - Val: 6.0 to 21.0 years (mean: 7.8)
+  Age range - Eval: 5.8 to 31.0 years (mean: 9.5)
 ```
 
 ## Feature Extraction
@@ -112,13 +112,19 @@ BeyondFA/
 
 Using the baseline solution with extraction of only FA feature, the results of the best model are:
 
-|            | Loss   | MAE    |
-|------------|--------|--------|
-| Training   | 7.3218 | 7.3314 |
-| Validation | 4.3264 | 4.3264 |
-| Evaluation |        | 3.3995 |
+|            | Loss    | MAE    |
+|------------|---------|--------|
+| Training   | 11.6099 | 1.1898 |
+| Validation | 11.4805 | 1.1898 |
+| Evaluation |         | 2.5183 |
 
 
+Results after training 2D CNN using the FA feature
+|            | Loss    | MAE    |
+|------------|---------|--------|
+| Training   | 12.8195 | 2.4347 |
+| Validation | 63.4710 | 4.8772 |
+| Evaluation |         | 2.4050 |
 
 ## References
 
