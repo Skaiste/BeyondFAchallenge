@@ -7,4 +7,6 @@ valid_csv_path: ../csv/valid_age.csv
 eval_csv_path: ../csv/eval_age.csv
 json_dir: ../../output
 output_dir: results
+features: 512
+hidden_dim: 64
 task: age # change for desired task

@@ -12,6 +12,7 @@ This script:
 import os
 import pandas as pd
 import numpy as np
+import json
 import re
 from pathlib import Path
 from sklearn.model_selection import train_test_split
@@ -238,7 +239,7 @@ def split_with_age_coverage(subjects, subject_to_bin, subject_to_age,
 
 def generate_csv_files(output_dir, participants_tsv_path, output_csv_dir, 
                       train_split=0.7, val_split=0.15, eval_split=0.15, 
-                      random_state=42, task='age', n_age_bins=2):
+                      random_state=42, task='age', n_age_bins=2, features=128):
     """
     Generate train, validation, and evaluation CSV files with age-stratified splitting.
     
@@ -262,6 +263,8 @@ def generate_csv_files(output_dir, participants_tsv_path, output_csv_dir,
         Task type: 'age', 'sex', or 'cognitive_status'
     n_age_bins : int
         Number of age bins for stratification (default: 5)
+    features : int
+        Number of features: 128 or 512 (default: 128)
     """
     
     # Load participant metadata
@@ -269,10 +272,10 @@ def generate_csv_files(output_dir, participants_tsv_path, output_csv_dir,
     participants_dict = load_participants(participants_tsv_path)
     print(f"Loaded metadata for {len(participants_dict)} participant-session pairs")
     
-    # Find all JSON files
+    # Find all JSON files with the specified feature size
     output_path = Path(output_dir)
-    json_files = list(output_path.glob('*_features-128.json'))
-    print(f"Found {len(json_files)} JSON feature files")
+    json_files = list(output_path.glob(f'*_features-{features}.json'))
+    print(f"Found {len(json_files)} JSON feature files with {features} features")
     
     # Match JSON files with participant data
     matched_data = []
@@ -285,6 +288,23 @@ def generate_csv_files(output_dir, participants_tsv_path, output_csv_dir,
         if subject_id is None or session_id is None:
             print(f"Warning: Could not parse filename: {filename}")
             unmatched_files.append(filename)
+            continue
+
+        # INSERT_YOUR_CODE
+        # Check if the JSON file contains all zeros (assume JSON contains a list of numbers)
+        try:
+            with open(json_file, "r") as f:
+                data = json.load(f)
+            if isinstance(data, list):
+                is_all_zero = all(float(val) == 0.0 for val in data) if data else True
+            else:
+                is_all_zero = True
+        except Exception as e:
+            print(f"Warning: Could not load JSON or parse numeric list for {filename}: {e}")
+            is_all_zero = True
+
+        if is_all_zero:
+            print(f"Skipping {filename} as it contains only zeros")
             continue
         
         key = (subject_id, session_id)
@@ -522,6 +542,8 @@ if __name__ == "__main__":
                        help='Task type (default: age)')
     parser.add_argument('--n-age-bins', type=int, default=2,
                        help='Number of age bins for stratification (default: 2, threshold: 10 years)')
+    parser.add_argument('--features', type=int, choices=[128, 512], default=128,
+                       help='Number of features: 128 or 512 (default: 128)')
     
     args = parser.parse_args()
     
@@ -540,6 +562,7 @@ if __name__ == "__main__":
     print(f"Task: {args.task}")
     print(f"Train/Val/Eval splits: {args.train_split:.2f}/{args.val_split:.2f}/{args.eval_split:.2f}")
     print(f"Age bins for stratification: {args.n_age_bins}")
+    print(f"Features: {args.features}")
     print("=" * 80)
     
     generate_csv_files(
@@ -551,5 +574,6 @@ if __name__ == "__main__":
         eval_split=args.eval_split,
         random_state=args.random_state,
         task=args.task,
-        n_age_bins=args.n_age_bins
+        n_age_bins=args.n_age_bins,
+        features=args.features
     )
