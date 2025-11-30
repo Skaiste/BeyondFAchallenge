@@ -280,6 +280,7 @@ def generate_csv_files(output_dir, participants_tsv_path, output_csv_dir,
     # Match JSON files with participant data
     matched_data = []
     unmatched_files = []
+    skipped_files = 0
     
     for json_file in json_files:
         filename = json_file.name
@@ -305,6 +306,7 @@ def generate_csv_files(output_dir, participants_tsv_path, output_csv_dir,
 
         if is_all_zero:
             print(f"Skipping {filename} as it contains only zeros")
+            skipped_files += 1
             continue
         
         key = (subject_id, session_id)
@@ -441,6 +443,8 @@ def generate_csv_files(output_dir, participants_tsv_path, output_csv_dir,
         print(f"\nTrain set: {len(train_df)} samples from {len(train_subjects)} subjects")
         print(f"Validation set: {len(val_df)} samples from {len(val_subjects)} subjects")
         print(f"Evaluation set: {len(eval_df)} samples from {len(eval_subjects)} subjects")
+
+        print(f"\nSkipped files: {skipped_files}")
         
         print(f"\nAge bin coverage:")
         print(f"  Total age bins: {len(all_bins)}")
