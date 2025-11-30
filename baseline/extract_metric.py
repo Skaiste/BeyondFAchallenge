@@ -21,7 +21,7 @@ def extract_metric_values(input_file, output_file):
     
     print(f"Extracted values saved to {relative(output_file)}")
 
-def extract_multiple_metrics(metric_files, output_file):
+def extract_multiple_metrics(metric_files, output_file, metric_order=['fa', 'md', 'ad', 'rd'], pad_to=-1):
     """
     Extract and combine multiple metrics into a single 512-element vector.
     
@@ -31,10 +31,7 @@ def extract_multiple_metrics(metric_files, output_file):
         output_file: Path to output JSON file
     """
     all_metrics = []
-    
-    # Process metrics in order: FA, MD, AD, RD
-    metric_order = ['fa', 'md', 'ad', 'rd']
-    
+    feature_size = 72
     for metric_name in metric_order:
         if metric_name in metric_files:
             metric_file = metric_files[metric_name]
@@ -47,20 +44,21 @@ def extract_multiple_metrics(metric_files, output_file):
                         metric_values.append(float(value))
             else:
                 print(f"Warning: {relative(metric_file)} does not exist, using zeros for {metric_name}")
-            
-            # Zero pad to 128
-            metric_values += [0] * (128 - len(metric_values))
+
+            if pad_to != -1:
+                metric_values += [0] * (pad_to - len(metric_values))
             all_metrics.extend(metric_values)
         else:
             # If metric file not provided, add 128 zeros
             print(f"Warning: {metric_name} not provided, using zeros")
-            all_metrics.extend([0] * 128)
+            all_metrics.extend([0] * feature_size)
     
     # Ensure total length is 512 (4 metrics * 128 each)
-    if len(all_metrics) < 512:
-        all_metrics += [0] * (512 - len(all_metrics))
-    elif len(all_metrics) > 512:
-        all_metrics = all_metrics[:512]
+    total_length = len(metric_order) * feature_size
+    if len(all_metrics) < total_length:
+        all_metrics += [0] * (total_length - len(all_metrics))
+    elif len(all_metrics) > total_length:
+        all_metrics = all_metrics[:total_length]
     
     with open(output_file, 'w') as f:
         json.dump(all_metrics, f, indent=4)

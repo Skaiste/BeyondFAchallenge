@@ -1,4 +1,5 @@
 import os
+import tempfile
 from utils.run_cmd import run_command, relative
 
 os.environ["PATH"] = "/usr/local/mrtrix3/bin:" + os.environ.get("PATH", "")
@@ -63,3 +64,26 @@ def create_peaks(fod_file, peaks_file, mask_file, skip_peaks=False):
                 "-mask", str(mask_file), "-fast"
             ])
 
+
+def create_white_matter_mask(dwi_file, mask_file, threshold=0.4):
+    """
+    Create a white matter mask from a dwi file using mrtrix3.
+    """
+    force = True
+    if mask_file.exists() and not force:
+        print(f"  [CACHE] White matter mask already exists: {relative(mask_file)}, skipping dwi2mask")
+    else:
+        # Use delete=False to ensure file persists until both commands complete
+        tmp_mask_file = tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False)
+        try:
+            run_command([
+                "mrthreshold", str(dwi_file), "-abs", str(threshold), tmp_mask_file.name, "-force"
+            ])
+            run_command([
+                "mrconvert", str(tmp_mask_file.name), str(mask_file), "-datatype", "uint8", "-force"
+            ])
+        finally:
+            tmp_mask_file.close()
+            # Manually delete the temp file after both commands complete
+            if os.path.exists(tmp_mask_file.name):
+                os.unlink(tmp_mask_file.name)

@@ -264,7 +264,7 @@ def generate_csv_files(output_dir, participants_tsv_path, output_csv_dir,
     n_age_bins : int
         Number of age bins for stratification (default: 5)
     features : int
-        Number of features: 128 or 512 (default: 128)
+        Number of features
     """
     
     # Load participant metadata
@@ -542,8 +542,8 @@ if __name__ == "__main__":
                        help='Task type (default: age)')
     parser.add_argument('--n-age-bins', type=int, default=2,
                        help='Number of age bins for stratification (default: 2, threshold: 10 years)')
-    parser.add_argument('--features', type=int, choices=[128, 512], default=128,
-                       help='Number of features: 128 or 512 (default: 128)')
+    parser.add_argument('--features', type=int, default=128,
+                       help='Number of features (default: 128)')
     
     args = parser.parse_args()
     

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Plot brain scans for FA, MD, AD, and RD metrics.
+Plot brain scans for FA, MD, AD, RD, afd_total, and nufo metrics.
 
-This script visualizes diffusion tensor imaging (DTI) metrics from NIfTI files.
+This script visualizes diffusion tensor imaging (DTI) and FODF metrics from NIfTI files.
 It can display brain scans in axial, coronal, or sagittal views, showing all
-four metrics (FA, MD, AD, RD) side by side.
+six metrics (FA, MD, AD, RD, afd_total, nufo) in a 3x2 grid.
 
 Usage:
     # View a specific slice interactively
@@ -67,14 +67,14 @@ def get_slice(data, slice_idx, view='axial'):
 
 
 def plot_metrics(metric_dir, slice_idx=None, view='axial', output_path=None, 
-                 figsize=(16, 4), dpi=100, cmap='hot'):
+                 figsize=(12, 18), dpi=100, cmap='hot'):
     """
-    Plot FA, MD, AD, and RD metrics side by side.
+    Plot FA, MD, AD, RD, afd_total, and nufo metrics in a 3x2 grid.
     
     Parameters:
     -----------
     metric_dir : str
-        Path to directory containing fa.nii.gz, md.nii.gz, ad.nii.gz, rd.nii.gz
+        Path to directory containing fa.nii.gz, md.nii.gz, ad.nii.gz, rd.nii.gz, afd_total.nii.gz, nufo.nii.gz
     slice_idx : int, optional
         Index of slice to display. If None, displays middle slice.
     view : str
@@ -90,12 +90,14 @@ def plot_metrics(metric_dir, slice_idx=None, view='axial', output_path=None,
     """
     metric_dir = Path(metric_dir)
     
-    # Define metric files
+    # Define metric files in order for 3x2 grid: Row1: FA, MD; Row2: AD, RD; Row3: afd_total, nufo
     metric_files = {
         'FA': metric_dir / 'fa.nii.gz',
         'MD': metric_dir / 'md.nii.gz',
         'AD': metric_dir / 'ad.nii.gz',
-        'RD': metric_dir / 'rd.nii.gz'
+        'RD': metric_dir / 'rd.nii.gz',
+        'afd_total': metric_dir / 'afd_total.nii.gz',
+        'nufo': metric_dir / 'nufo.nii.gz'
     }
     
     # Check if all files exist
@@ -141,14 +143,17 @@ def plot_metrics(metric_dir, slice_idx=None, view='axial', output_path=None,
             elif view == 'sagittal':
                 slice_idx = data_shape[2] // 2
     
-    # Create figure
+    # Create figure - always 3 rows x 2 columns for metrics
+    n_metric_rows = 3
+    n_metric_cols = 2
+    
     if view == 'all':
-        n_rows = len(views)
-        n_cols = len(metric_files)
-        figsize = (figsize[0], figsize[1] * n_rows)
+        n_rows = len(views) * n_metric_rows
+        n_cols = n_metric_cols
+        figsize = (figsize[0], figsize[1] * len(views))
     else:
-        n_rows = 1
-        n_cols = len(metric_files)
+        n_rows = n_metric_rows
+        n_cols = n_metric_cols
     
     fig, axes = plt.subplots(n_rows, n_cols, figsize=figsize, dpi=dpi)
     
@@ -165,18 +170,37 @@ def plot_metrics(metric_dir, slice_idx=None, view='axial', output_path=None,
         'FA': 'hot',
         'MD': 'viridis',
         'AD': 'plasma',
-        'RD': 'inferno'
+        'RD': 'inferno',
+        'afd_total': 'magma',
+        'nufo': 'cividis'
     }
     
+    # Define metric order for 3x2 grid
+    metric_order = ['FA', 'MD', 'AD', 'RD', 'afd_total', 'nufo']
+    
     # Plot each metric
-    for row_idx, current_view in enumerate(views):
+    for view_idx, current_view in enumerate(views):
         if view == 'all':
             current_slice_idx = slice_idx[current_view]
         else:
             current_slice_idx = slice_idx
         
-        for col_idx, (metric_name, metric_data) in enumerate(metrics_data.items()):
-            ax = axes[row_idx, col_idx]
+        for metric_idx, metric_name in enumerate(metric_order):
+            if metric_name not in metrics_data:
+                continue
+            
+            # Calculate row and column in the grid
+            metric_row = metric_idx // n_metric_cols
+            metric_col = metric_idx % n_metric_cols
+            
+            if view == 'all':
+                # Offset row by view
+                row_idx = view_idx * n_metric_rows + metric_row
+            else:
+                row_idx = metric_row
+            
+            ax = axes[row_idx, metric_col]
+            metric_data = metrics_data[metric_name]
             
             # Extract slice
             slice_data = get_slice(metric_data, current_slice_idx, current_view)
@@ -191,13 +215,22 @@ def plot_metrics(metric_dir, slice_idx=None, view='axial', output_path=None,
             plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
             
             # Set title
-            if row_idx == 0:
-                title = f"{metric_name}"
+            if view == 'all':
+                if metric_row == 0:
+                    title = f"{metric_name}"
+                else:
+                    title = ""
+                if metric_col == 0 and metric_row == 0:
+                    view_label = current_view.capitalize()
+                    ax.set_ylabel(f"{view_label}\nSlice {current_slice_idx}", fontsize=10)
             else:
-                title = ""
-            if col_idx == 0:
-                view_label = current_view.capitalize()
-                ax.set_ylabel(f"{view_label}\nSlice {current_slice_idx}", fontsize=10)
+                if metric_row == 0:
+                    title = f"{metric_name}"
+                else:
+                    title = ""
+                if metric_col == 0:
+                    view_label = current_view.capitalize()
+                    ax.set_ylabel(f"{view_label}\nSlice {current_slice_idx}", fontsize=10)
             ax.set_title(title, fontsize=12, fontweight='bold')
             
             # Add slice info in corner
@@ -225,7 +258,7 @@ def plot_metrics(metric_dir, slice_idx=None, view='axial', output_path=None,
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Plot brain scans for FA, MD, AD, and RD metrics',
+        description='Plot brain scans for FA, MD, AD, RD, afd_total, and nufo metrics',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -244,7 +277,7 @@ Examples:
     )
     
     parser.add_argument('--metric-dir', type=str, required=True,
-                       help='Path to directory containing fa.nii.gz, md.nii.gz, ad.nii.gz, rd.nii.gz')
+                       help='Path to directory containing fa.nii.gz, md.nii.gz, ad.nii.gz, rd.nii.gz, afd_total.nii.gz, nufo.nii.gz')
     parser.add_argument('--slice', type=int, default=None,
                        help='Slice index to display (default: middle slice)')
     parser.add_argument('--view', type=str, default='axial',
@@ -252,9 +285,9 @@ Examples:
                        help='View orientation: axial, coronal, sagittal, or all (default: axial)')
     parser.add_argument('--output', type=str, default=None,
                        help='Path to save figure (default: display interactively)')
-    parser.add_argument('--figsize', type=float, nargs=2, default=[16, 4],
+    parser.add_argument('--figsize', type=float, nargs=2, default=[12, 18],
                        metavar=('WIDTH', 'HEIGHT'),
-                       help='Figure size in inches (default: 16 4)')
+                       help='Figure size in inches (default: 12 18)')
     parser.add_argument('--dpi', type=int, default=100,
                        help='Resolution for saved figures (default: 100)')
     parser.add_argument('--cmap', type=str, default='hot',
