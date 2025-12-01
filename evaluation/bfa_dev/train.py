@@ -24,7 +24,7 @@ def main(config):
     valid_loader = DataLoader(valid_dataset, batch_size=len(valid_dataset), shuffle=False)
     eval_loader = DataLoader(eval_dataset, batch_size=len(eval_dataset), shuffle=False)
 
-    model = BFANet(input_dim=config['features'], hidden_dim=config['hidden_dim'], task=config['task'])
+    model = BFANet(input_dim=config['features'], hidden_dim=config['hidden_dim'], reduce_hidden_dim=config['reduce_hidden_dim'], task=config['task'])
     optimizer = torch.optim.Adam(model.parameters(), lr=config['lr'])
 
     train_model(model, train_loader, valid_loader, task=config['task'], 

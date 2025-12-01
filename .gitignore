@@ -1,6 +1,6 @@
 ds003416/
-output/
-results/
+output*/
+results*/
 evaluation/csv/
 *.pyc
 *.pyo

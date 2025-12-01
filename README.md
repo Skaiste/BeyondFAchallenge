@@ -1,9 +1,11 @@
 # Beyond FA Challenge
 
-This project is an attempt to solve the [Beyond FA (BFA) challenge](https://bfa.grand-challenge.org/), a diffusion MRI grand challenge focused on extracting meaningful features to better understand white matter integrity within Alzheimer's Disease (AD) cohorts. The challenge was loosely followed. The main requirement was to extract a 128 feature set for the task, however, I explored three different approaches:
+This project is an attempt to solve the [Beyond FA (BFA) challenge](https://bfa.grand-challenge.org/), a diffusion MRI grand challenge focused on extracting meaningful features to better understand white matter integrity within Alzheimer's Disease (AD) cohorts. The challenge was loosely followed. The main requirement was to extract a 128 feature set for the task, however, I explored five different approaches:
 - Extracting 5 more other features across bundles and concatenating them into one feature set (432 features) for the evaluation model
 - Using a 2D CNN model using extracted FA
 - Taking the 6 extracted features and training a model where a linear layer projects the 432 into 128 feature set and ends with the evaluation model. The features are then extracted for the final evaluation. The main flaw with this approach is that the datasets for this and the evaluation models are for the same subjects, since there is not enough data to split and have the models be efficient. This approach was taken to try to comply with the challenge requirement.
+- TODO: Autoencoder
+- TODO: PCA
 
 ## Background
 
@@ -92,7 +94,9 @@ Beyond the baseline implementation, this project extends the feature extraction 
 
 These additional metrics provide a more comprehensive characterization of white matter microstructure, potentially improving the model's ability to capture meaningful biomarkers beyond what FA alone can provide.
 
-### Additional models
+### Additional models & model changes
+
+For the first approach, the evaluation model architecture was changed to use 256 as a hidden dimension and aditional two blocks LeakyReLU and Linear Layer added that reduces parameters from 256 to 128 and then from 128 to 64 dimensions.
 
 Beyond the baseline MLP evaluation model, this project explores alternative architectures:
 
@@ -100,42 +104,48 @@ Beyond the baseline MLP evaluation model, this project explores alternative arch
 
 - **Feature Reduction Model**: A learned dimensionality reduction approach that takes the full 432-dimensional feature vector (6 metrics × 72 bundles) and reduces it to 128 dimensions using a trainable linear layer with LeakyReLU activation. The reduced features are then passed through the BFANet architecture for age prediction. This model allows the network to learn an optimal feature representation while maintaining compatibility with the standard 128-feature format. After training, the reduction layer can be used to extract reduced features from all 432-feature inputs for downstream analysis.
 
+- **Autoencoder Model**: TODO
+
+- **PCA Model**: TODO
+
 ## Project Structure
 
 ```
 BeyondFA/
-├── baseline/                      # Baseline feature extraction scripts
+├── baseline/                        # Baseline feature extraction scripts
 │   ├── convert_json_to_bvalbvec.py
 │   ├── convert_mha_to_nifti.py
 │   ├── extract_metric.py
 │   └── run_metric.sh
-├── evaluation/                   # Evaluation framework and MLP training code
-│   ├── bfa_dev/                  # Main evaluation code
-│   │   ├── config.yaml          # Configuration file
-│   │   ├── train.py             # Training script
-│   │   ├── data/                # Dataset utilities
-│   │   ├── models/              # Model definitions
-│   │   └── utils/               # Training utilities
+├── evaluation/                      # Evaluation framework and MLP training code
+│   ├── bfa_dev/                     # Main evaluation code
+│   │   ├── config.yaml              # Configuration file
+│   │   ├── train.py                 # Training script
+│   │   ├── data/                    # Dataset utilities
+│   │   ├── models/                  # Model definitions
+│   │   └── utils/                   # Training utilities
 │   ├── convert_nifti_to_mha.py
 │   └── generate_json.py
-├── utils/                        # Utility modules for feature extraction
-│   ├── dwi_data.py              # DWI data handling
-│   ├── fodf.py                  # FOD (Fiber Orientation Distribution) utilities
-│   ├── fslstats.py              # FSL statistics wrapper
-│   ├── mrtrix.py                # MRtrix3 command wrappers
-│   ├── run_cmd.py               # Command execution utilities
-│   ├── scilpy.py                # scilpy command wrappers
-│   └── tractseg.py              # TractSeg utilities
+├── utils/                           # Utility modules for feature extraction
+│   ├── dwi_data.py                  # DWI data handling
+│   ├── fodf.py                      # FOD (Fiber Orientation Distribution) utilities
+│   ├── fslstats.py                  # FSL statistics wrapper
+│   ├── mrtrix.py                    # MRtrix3 command wrappers
+│   ├── run_cmd.py                   # Command execution utilities
+│   ├── scilpy.py                    # scilpy command wrappers
+│   └── tractseg.py                  # TractSeg utilities
 ├── baseline_extract_features.ipynb  # Baseline feature extraction notebook
-├── extract_features.ipynb        # Main feature extraction notebook
-├── find_downloaded.py            # Script to find downloaded subjects
-├── generate_data_csv.py          # Script for generating train/val/eval splits
-├── plot_brain_scan.py           # Visualization utilities
-├── run_tractseg.sh              # TractSeg execution script
-├── train_2d_cnn.py              # 2D CNN training script
-├── train_to_reduce_features.py  # Feature reduction training script
-├── unify_scan_sizes.py          # Script to unify scan sizes
-└── README.md                     # This file
+├── extract_features.ipynb           # Main feature extraction notebook
+├── find_downloaded.py               # Script to find downloaded subjects
+├── generate_data_csv.py             # Script for generating train/val/eval splits
+├── plot_brain_scan.py               # Visualization utilities
+├── run_tractseg.sh                  # TractSeg execution script
+├── train_2d_cnn.py                  # 2D CNN training script
+├── train_to_reduce_features.py      # Feature reduction training script
+├── train_autoencoder.py             # Feature reduction using autoencoder
+├── train_pca.py                     # Feature reduction using PCA
+├── unify_scan_sizes.py              # Script to unify scan sizes
+└── README.md                        # This file
 ```
 
 ## Usage
@@ -143,17 +153,17 @@ BeyondFA/
 ### Baseline and First Approach
 1. **Feature Extraction**: Run `extract_features.ipynb` to extract features from the MASiVar dataset
 2. **Generate Splits**: Run `generate_data_csv.py` to create train/validation/evaluation CSV files
-3. **Train Model**: Use the evaluation framework in `evaluation/bfa_dev/` to train and evaluate models
+3. **Train Model**: Use the evaluation framework in `evaluation/bfa_dev/` to train and evaluate models.
 
 ### Second Approach
 1. **Feature Extraction**: Run `extract_features.ipynb` to extract features from the MASiVar dataset
 2. **Unify Scan Sizes**: Run `unify_scan_sizes.py` to standardize scan dimensions by centering brains and cropping/padding to a common size.
 3. **Train 2D CNN**: Run `train_2d_cnn.py` to train the 2D CNN model on the unified FA scans. The script automatically splits data by subject with age-stratified splitting, normalizes the data, and trains the 2D CNN for age prediction. Model checkpoints and results are saved to the specified output directory.
 
-### Third Approach
+### Third, Fourth and Fifth Approaches
 1. **Feature Extraction**: Run `extract_features.ipynb` to extract features from the MASiVar dataset
 2. **Generate Splits**: Run `generate_data_csv.py` to create train/validation/evaluation CSV files
-3. **Train Feature Reduction Model**: Run `train_to_reduce_features.py` to train and evaluate feature reduction model and eventually run it on the whole dataset to reduce the feature set.
+3. **Train Feature Reduction Model**: Run `train_to_reduce_features.py` (for 3rd), `train_autoencoder.py` (for 4th) or `train_pca.py` (for 5th) to train and evaluate feature reduction model and eventually run it on the whole dataset to reduce the feature set.
 4. **Generate Splits**: Run `generate_data_csv.py` to create train/validation/evaluation CSV files from the reduced data
 5. **Train Model**: Use the evaluation framework in `evaluation/bfa_dev/` to train and evaluate models
 
@@ -168,12 +178,12 @@ Using the baseline solution with extraction of only FA feature, the results of t
 | Evaluation |         | 2.5183 |
 
 ### First Approach
-Using all extracted features, the results are:
-|            | Loss    | MAE    |
-|------------|---------|--------|
-| Training   | 11.6099 | 1.1898 |
-| Validation | 11.4805 | 1.1898 |
-| Evaluation |         | 2.5183 |
+Using all extracted features and a new evaluation model, the results are:
+|            | Loss   | MAE    |
+|------------|--------|--------|
+| Training   | 2.0990 | 2.0661 |
+| Validation | 0.6741 | 0.6741 |
+| Evaluation |        | 2.3739 |
 
 ### Second Approach
 Results after training 2D CNN using the FA feature:
@@ -182,6 +192,34 @@ Results after training 2D CNN using the FA feature:
 | Training   | 12.8195 | 2.4347 |
 | Validation | 63.4710 | 4.8772 |
 | Evaluation |         | 2.4050 |
+
+### Third Approach
+Results after feature reduction:
+|            | Loss   | MAE    |
+|------------|--------|--------|
+| Training   | 7.2348 | 7.2465 |
+| Validation | 4.3774 | 4.3774 |
+| Evaluation |        | 3.5193 |
+
+### Fourth Approach
+Results after feature reduction using an autoencoder:
+|            | Loss   | MAE    |
+|------------|--------|--------|
+| Training   | 6.5175 | 6.5063 |
+| Validation | 3.1080 | 3.1080 |
+| Evaluation |        | 2.6788 |
+
+### Fifth Approach
+Results after feature reduction using PCA:
+|            | Loss   | MAE    |
+|------------|--------|--------|
+| Training   | 6.5939 | 6.5821 |
+| Validation | 3.2765 | 3.2765 |
+| Evaluation |        | 2.8210 |
+
+## Discussion
+
+TODO plot and discuss the results
 
 ## References
 
